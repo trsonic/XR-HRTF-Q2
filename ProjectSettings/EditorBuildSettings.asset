@@ -6,7 +6,7 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/MainScene.unity
+    path: Assets/Scenes/XR-HRTF-CAPTURE.unity
     guid: 0d45dfe8831c91249b1ad0da277500c2
   m_configObjects:
     Unity.XR.Oculus.Settings: {fileID: 11400000, guid: 6c9f81d5b262aa941927a677b8e88967,
