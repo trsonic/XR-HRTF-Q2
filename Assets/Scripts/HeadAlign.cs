@@ -1,9 +1,6 @@
 ﻿using System;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-//using UnityEngine.XR.MagicLeap;
 using OscJack;
 
 public class HeadAlign : MonoBehaviour
@@ -20,7 +17,6 @@ public class HeadAlign : MonoBehaviour
 
     public GameObject _headPositionTarget;
     public GameObject _headOrientationTarget;
-    public GameObject _sphericalGrid;
     public GameObject _virtualSpeaker;
 
     private GameObject _arrow;
@@ -197,7 +193,7 @@ public class HeadAlign : MonoBehaviour
         text += "Angular deviation: " + spHeadAngDev.ToString("F2") + "\n";
 
         // update text display
-        _textDisplay.GetComponent<Text>().text = text;
+        _textDisplay.GetComponent<TextMesh>().text = text;
 
         // OSC output
         double currentTime = Time.realtimeSinceStartup - _timeAtStartup;

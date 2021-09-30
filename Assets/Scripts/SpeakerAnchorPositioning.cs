@@ -39,13 +39,14 @@ public class SpeakerAnchorPositioning : MonoBehaviour
 
         if (OVRInput.GetDown(OVRInput.Button.PrimaryHandTrigger, controller))
         {
-            _speakerAnchor.transform.rotation = OVRInput.GetLocalControllerRotation(controller);
+            Vector3 speakerOrientation = new Vector3(0.0f, OVRInput.GetLocalControllerRotation(controller).eulerAngles.y, 0.0f);
+            _speakerAnchor.transform.eulerAngles = speakerOrientation;
             _speakerAnchor.transform.position = OVRInput.GetLocalControllerPosition(controller);
+            _speakerAnchor.transform.Translate(0.0f, 0.0f, 0.1f);
 
-            //Vector3 speakerOrientation = new Vector3(0.0f, _control.Orientation.eulerAngles.y, 0.0f);
-            //_speakerAnchor.transform.eulerAngles = speakerOrientation;
-            //_speakerAnchor.transform.localPosition = _control.Position;
-            //_speakerAnchor.transform.Translate(0.0f, 0.0f, 0.1f);
+            _textDisplay.transform.rotation = _speakerAnchor.transform.rotation;
+            _textDisplay.transform.position = _speakerAnchor.transform.position;
+            _textDisplay.transform.Translate(0.0f, 0.6f, 0.0f);
         }
 
         //if (_homeBtnPressed)
