@@ -21,11 +21,11 @@ public class HeadAlign : MonoBehaviour
 
     private GameObject _arrow;
 
-    private bool targetVis = false;
+    //private bool targetVis;
     private bool orientationLocked = false;
     private float speakerAz = 0.0f;
     private float speakerEl = 0.0f;
-    private float speakerDist = 0.6f;
+    private float speakerDist = 1.0f;
     private double _timeAtStartup;
 
     void Start()
@@ -33,14 +33,14 @@ public class HeadAlign : MonoBehaviour
         _sender = new OscClient(_IPAddress, _oscPortOut);
         _server = new OscServer(_oscPortIn);
 
-        _server.MessageDispatcher.AddCallback(
-               "/targetVis",
-               (string address, OscDataHandle data) =>
-               {
-                   if (data.GetElementAsInt(0) == 1) targetVis = true;
-                   else targetVis = false;
-               }
-           );
+        //_server.MessageDispatcher.AddCallback(
+        //       "/targetVis",
+        //       (string address, OscDataHandle data) =>
+        //       {
+        //           if (data.GetElementAsInt(0) == 1) targetVis = true;
+        //           else targetVis = false;
+        //       }
+        //   );
 
         _server.MessageDispatcher.AddCallback(
                "/orientationLocked",
@@ -99,6 +99,12 @@ public class HeadAlign : MonoBehaviour
         _arrow.GetComponent<LineRenderer>().positionCount = 2;
         _arrow.GetComponent<LineRenderer>().generateLightingData = true;
         _arrow.GetComponent<LineRenderer>().useWorldSpace = false;
+
+
+        // for testing purpose only
+        speakerAz = 90.0f;
+        speakerEl = 45.0f;
+        //speakerDist = 1.0f;
     }
 
     void Update()
@@ -131,8 +137,8 @@ public class HeadAlign : MonoBehaviour
         _headOrientationTarget.transform.Rotate(-(speakerEl - elevationAngle), speakerAz - azimuthAngle, 0.0f);
         _headOrientationTarget.transform.position = _mainCamera.transform.position + _headOrientationTarget.transform.forward * orTargetDist;
 
-        Vector3 mcCenter = _mainCamera.transform.position;
-        Vector3 vfCenter = _mainCamera.transform.position + _mainCamera.transform.forward * 0.6f;
+        Vector3 mcCenter = _mainCamera.transform.position; // reference camera/head position
+        Vector3 vfCenter = _mainCamera.transform.position + _mainCamera.transform.forward * orTargetDist; // a point in front of the camera
         Vector3 vsVec = _virtualSpeaker.transform.position - _mainCamera.transform.position;
         Vector3 lsVec = _speakerAnchor.transform.position - _mainCamera.transform.position;
         Vector3 crossVec = Vector3.Cross(vfCenter - mcCenter, _headOrientationTarget.transform.position - mcCenter);
@@ -189,8 +195,13 @@ public class HeadAlign : MonoBehaviour
         float downupDistance = Vector3.Dot(_speakerAnchor.transform.TransformDirection(Vector3.up), _mainCamera.transform.position - _headPositionTarget.transform.position);
         text += "down / up: " + downupDistance.ToString("F2") + "\n";
 
+        // angle between speaker axis and speaker-head vector
         float spHeadAngDev = Vector3.Angle(_headPositionTarget.transform.position - _speakerAnchor.transform.position, _mainCamera.transform.position - _speakerAnchor.transform.position);
-        text += "Angular deviation: " + spHeadAngDev.ToString("F2") + "\n";
+        text += "Angular deviation: " + spHeadAngDev.ToString("F2") + " deg\n";
+
+        // head height
+        float headHeight = _mainCamera.transform.position.y;
+        text += "head height: " + headHeight.ToString("F2") + " m\n";
 
         // update text display
         _textDisplay.GetComponent<TextMesh>().text = text;
