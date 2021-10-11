@@ -16,8 +16,9 @@ public class HeadAlign : MonoBehaviour
     public GameObject _textDisplay;
 
     public GameObject _headPositionTarget;
-    public GameObject _headOrientationTarget;
     public GameObject _virtualSpeaker;
+    public GameObject _headOrientationTarget;
+    public GameObject _headOrientationCross;
 
     private GameObject _arrow;
 
@@ -30,37 +31,6 @@ public class HeadAlign : MonoBehaviour
 
     void Start()
     {
-        _sender = new OscClient(_IPAddress, _oscPortOut);
-        _server = new OscServer(_oscPortIn);
-
-        //_server.MessageDispatcher.AddCallback(
-        //       "/targetVis",
-        //       (string address, OscDataHandle data) =>
-        //       {
-        //           if (data.GetElementAsInt(0) == 1) targetVis = true;
-        //           else targetVis = false;
-        //       }
-        //   );
-
-        _server.MessageDispatcher.AddCallback(
-               "/orientationLocked",
-               (string address, OscDataHandle data) =>
-               {
-                   if (data.GetElementAsInt(0) == 1) orientationLocked = true;
-                   else orientationLocked = false;
-               }
-           );
-
-        _server.MessageDispatcher.AddCallback(
-               "/speaker",
-               (string address, OscDataHandle data) =>
-               {
-                   speakerAz = data.GetElementAsFloat(0);
-                   speakerEl = data.GetElementAsFloat(1);
-                   speakerDist = data.GetElementAsFloat(2);
-               }
-           );
-
         _timeAtStartup = Time.realtimeSinceStartup;
 
         // DRAW THE VIEWFINDER
@@ -71,22 +41,26 @@ public class HeadAlign : MonoBehaviour
 
         vfHorDown = new GameObject { name = "vfHorDown" };
         vfHorDown.DrawCircle(radius, lineWidth);
+        vfHorDown.GetComponent<LineRenderer>().material.color = Color.red;
         vfHorDown.transform.parent = _mainCamera.transform;
         vfHorDown.transform.Translate(0.0f, -vfMargin, 0.0f);
 
         vfHorUp = new GameObject { name = "vfHorUp" };
         vfHorUp.DrawCircle(radius, lineWidth);
+        vfHorUp.GetComponent<LineRenderer>().material.color = Color.red;
         vfHorUp.transform.parent = _mainCamera.transform;
         vfHorUp.transform.Translate(0.0f, vfMargin, 0.0f);
 
         vrVertLeft = new GameObject { name = "vrVertLeft" };
         vrVertLeft.DrawCircle(radius, lineWidth);
+        vrVertLeft.GetComponent<LineRenderer>().material.color = Color.green;
         vrVertLeft.transform.parent = _mainCamera.transform;
         vrVertLeft.transform.Translate(-vfMargin, 0.0f, 0.0f);
         vrVertLeft.transform.Rotate(transform.forward, 90.0f);
 
         vfVertRight = new GameObject { name = "vfVertRight" };
         vfVertRight.DrawCircle(radius, lineWidth);
+        vfVertRight.GetComponent<LineRenderer>().material.color = Color.green;
         vfVertRight.transform.parent = _mainCamera.transform;
         vfVertRight.transform.Translate(vfMargin, 0.0f, 0.0f);
         vfVertRight.transform.Rotate(transform.forward, 90.0f);
@@ -100,13 +74,16 @@ public class HeadAlign : MonoBehaviour
         _arrow.GetComponent<LineRenderer>().generateLightingData = true;
         _arrow.GetComponent<LineRenderer>().useWorldSpace = false;
 
-
         // for testing purpose only
-        speakerAz = 90.0f;
-        speakerEl = 45.0f;
-        //speakerDist = 1.0f;
-    }
+        speakerAz = 45.0f;
+        speakerEl = 30.0f;
 
+        setupOsc();
+    }
+    private void OnDestroy()
+    {
+        _server.Dispose();
+    }
     void Update()
     {
         String text = "";
@@ -124,11 +101,10 @@ public class HeadAlign : MonoBehaviour
         text += "current speaker azi: " + azimuthAngle.ToString("F1") + ", ele: " + elevationAngle.ToString("F1") + ", dist: " + currDist.ToString("F2") + "\n";
 
         // VIRTUAL SPEAKER
-        float vsDist = currDist;
         _virtualSpeaker.transform.position = _mainCamera.transform.position;
         _virtualSpeaker.transform.rotation = _mainCamera.transform.rotation;
         _virtualSpeaker.transform.Rotate(-speakerEl, speakerAz, 0.0f);
-        _virtualSpeaker.transform.position = _mainCamera.transform.position + _virtualSpeaker.transform.forward * vsDist;
+        _virtualSpeaker.transform.position = _mainCamera.transform.position + _virtualSpeaker.transform.forward * currDist;
 
         // HEAD ORIENTATION TARGET
         float orTargetDist = 0.6f;
@@ -164,6 +140,19 @@ public class HeadAlign : MonoBehaviour
             _headOrientationTarget.transform.position = arrowEndPosition;
         }
 
+        // HEAD ORIENTATION CROSS
+        _headOrientationCross.transform.position = _mainCamera.transform.position;
+        _headOrientationCross.transform.rotation = _mainCamera.transform.rotation;
+
+        float crRotYaw = -(speakerAz - azimuthAngle);
+        float crRotPitch = Mathf.Sin(azimuthAngle * Mathf.PI / 360.0f) * (speakerEl - elevationAngle);
+        float crRotRoll = -Mathf.Cos(azimuthAngle * Mathf.PI / 360.0f) * (speakerEl - elevationAngle);
+        _headOrientationCross.transform.Rotate(crRotPitch, crRotYaw, crRotRoll);
+
+        // FLOOR CIRCLE ARROW AZIMUTH
+        _headPositionTarget.GetComponent<FloorCircle>().arrowAzimuth = -speakerAz;
+
+        // LOCKED ORIENTATION INDICATOR
         if (orientationLocked)
         {
             _arrow.GetComponent<LineRenderer>().material.color = Color.green;
@@ -217,7 +206,39 @@ public class HeadAlign : MonoBehaviour
                      spHeadAngDev.ToString("F2") + "," +
                      headTargetDistance.ToString("F2");
 
-
         _sender.Send("/headOrientation", msg);
+    }
+    void setupOsc()
+    {
+        _sender = new OscClient(_IPAddress, _oscPortOut);
+        _server = new OscServer(_oscPortIn);
+
+        //_server.MessageDispatcher.AddCallback(
+        //       "/targetVis",
+        //       (string address, OscDataHandle data) =>
+        //       {
+        //           if (data.GetElementAsInt(0) == 1) targetVis = true;
+        //           else targetVis = false;
+        //       }
+        //   );
+
+        _server.MessageDispatcher.AddCallback(
+               "/orientationLocked",
+               (string address, OscDataHandle data) =>
+               {
+                   if (data.GetElementAsInt(0) == 1) orientationLocked = true;
+                   else orientationLocked = false;
+               }
+           );
+
+        _server.MessageDispatcher.AddCallback(
+               "/speaker",
+               (string address, OscDataHandle data) =>
+               {
+                   speakerAz = data.GetElementAsFloat(0);
+                   speakerEl = data.GetElementAsFloat(1);
+                   speakerDist = data.GetElementAsFloat(2);
+               }
+           );
     }
 }
