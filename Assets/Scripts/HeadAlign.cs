@@ -29,6 +29,13 @@ public class HeadAlign : MonoBehaviour
     private float speakerDist = 1.0f;
     private double _timeAtStartup;
 
+    //// testing
+    ////float[] test_azis = { 0.0f, 45.0f, 45.0f, 135.0f, 135.0f, 225.0f, 225.0f, 315.0f, 315.0f };
+    ////float[] test_eles = { 0.0f, -30.0f, 30.0f, -30.0f, 30.0f, -30.0f, 30.0f, -30.0f, 30.0f };
+    //float[] test_azis = { 0.00f,0.00f,0.00f,0.00f,18.43f,18.43f,45.00f,45.00f,45.00f,45.00f,45.00f,71.57f,71.57f,90.00f,90.00f,90.00f,108.43f,108.43f,135.00f,135.00f,135.00f,135.00f,135.00f,161.57f,161.57f,180.00f,180.00f,180.00f,180.00f,-161.57f,-161.57f,-135.00f,-135.00f,-135.00f,-135.00f,-135.00f,-108.43f,-108.43f,-90.00f,-90.00f,-90.00f,-71.57f,-71.57f,-45.00f,-45.00f,-45.00f,-45.00f,-45.00f,-18.43f,-18.43f};
+    //float[] test_eles = { -45.00f,0.00f,45.00f,90.00f,-17.55f,17.55f,-64.76f,-35.26f,0.00f,35.26f,64.76f,-17.55f,17.55f,-45.00f,0.00f,45.00f,-17.55f,17.55f,-64.76f,-35.26f,0.00f,35.26f,64.76f,-17.55f,17.55f,-90.00f,-45.00f,0.00f,45.00f,-17.55f,17.55f,-64.76f,-35.26f,0.00f,35.26f,64.76f,-17.55f,17.55f,-45.00f,0.00f,45.00f,-17.55f,17.55f,-64.76f,-35.26f,0.00f,35.26f,64.76f,-17.55f,17.55f};
+    //int testLocIndex = 0;
+
     void Start()
     {
         _timeAtStartup = Time.realtimeSinceStartup;
@@ -75,8 +82,9 @@ public class HeadAlign : MonoBehaviour
         _arrow.GetComponent<LineRenderer>().useWorldSpace = false;
 
         // for testing purpose only
-        speakerAz = 45.0f;
-        speakerEl = 30.0f;
+        //speakerAz = 45.0f;
+        //speakerEl = 30.0f;
+
 
         setupOsc();
     }
@@ -86,6 +94,15 @@ public class HeadAlign : MonoBehaviour
     }
     void Update()
     {
+        //// testing
+        //if (OVRInput.GetDown(OVRInput.Button.PrimaryIndexTrigger, OVRInput.Controller.RTouch))
+        //{
+        //    testLocIndex = (testLocIndex + 1) % test_azis.Length;
+        //    speakerAz = test_azis[testLocIndex];
+        //    speakerEl = test_eles[testLocIndex];
+        //}
+
+
         String text = "";
 
         // display the desired speaker azimuth, elevation and distance
@@ -124,8 +141,9 @@ public class HeadAlign : MonoBehaviour
         text += "Angular distance: " + headSpAngDev.ToString("F2") + "\n";
 
         // ARROW
+        float az = (speakerAz + 360.0f) % 360.0f;
         _arrow.GetComponent<LineRenderer>().SetPosition(0, vfCenter);
-        if(speakerAz <= 90 && speakerAz >= -90)
+        if(az < 90 || az >= 270)
         {
             Vector3 arrowEndPosition = vfCenter + direction.normalized * Mathf.Sin(headSpAngDev * Mathf.PI / 360);
             _arrow.GetComponent<LineRenderer>().SetPosition(1, arrowEndPosition);
@@ -144,9 +162,33 @@ public class HeadAlign : MonoBehaviour
         _headOrientationCross.transform.position = _mainCamera.transform.position;
         _headOrientationCross.transform.rotation = _mainCamera.transform.rotation;
 
-        float crRotYaw = -(speakerAz - azimuthAngle);
-        float crRotPitch = Mathf.Sin(azimuthAngle * Mathf.PI / 360.0f) * (speakerEl - elevationAngle);
-        float crRotRoll = -Mathf.Cos(azimuthAngle * Mathf.PI / 360.0f) * (speakerEl - elevationAngle);
+        float pitchSign = 1.0f, rollSign = 1.0f;
+        float crRotYaw = -(az - azimuthAngle);
+
+
+        if (az >= 0.0f && az < 90.0f)
+        {
+            pitchSign = 1.0f;
+            rollSign = -1.0f;
+        }
+        else if (az >= 90.0f && az < 180.0f)
+        {
+            pitchSign = -1.0f;
+            rollSign = -1.0f;
+        }
+        else if (az >= 180.0f && az < 270.0f)
+        {
+            pitchSign = 1.0f;
+            rollSign = 1.0f;
+        }
+        else if (az >= 270.0f && az < 360.0f)
+        {
+            pitchSign = -1.0f;
+            rollSign = 1.0f;
+        }
+
+        float crRotPitch = pitchSign * Mathf.Sin(azimuthAngle * Mathf.PI / 360.0f) * (speakerEl - elevationAngle);
+        float crRotRoll = rollSign * Mathf.Cos(azimuthAngle * Mathf.PI / 360.0f) * (speakerEl - elevationAngle);
         _headOrientationCross.transform.Rotate(crRotPitch, crRotYaw, crRotRoll);
 
         // FLOOR CIRCLE ARROW AZIMUTH
