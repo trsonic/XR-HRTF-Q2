@@ -3,11 +3,16 @@ using UnityEngine;
 using UnityEngine.UI;
 using OscJack;
 
+using System.Net;
+using System.Net.NetworkInformation;
+using System.Net.Sockets;
+
 public class HeadAlign : MonoBehaviour
 {
     public string _IPAddress = "";
     public int _oscPortOut = 9000;
     public int _oscPortIn = 6000;
+    private string localIp;
     private OscServer _server;
     private OscClient _sender;
 
@@ -85,7 +90,7 @@ public class HeadAlign : MonoBehaviour
         //speakerAz = 45.0f;
         //speakerEl = 30.0f;
 
-
+        localIp = LocalIPAddress();
         setupOsc();
     }
     private void OnDestroy()
@@ -234,6 +239,9 @@ public class HeadAlign : MonoBehaviour
         float headHeight = _mainCamera.transform.position.y;
         text += "head height: " + headHeight.ToString("F2") + " m\n";
 
+        // Quest IP
+        text += "IP: " + localIp + "\n";
+
         // update text display
         _textDisplay.GetComponent<TextMesh>().text = text;
 
@@ -282,5 +290,36 @@ public class HeadAlign : MonoBehaviour
                    speakerDist = data.GetElementAsFloat(2);
                }
            );
+
+        _server.MessageDispatcher.AddCallback(
+               "/rendererIp",
+               (string address, OscDataHandle data) =>
+               {
+                   if (data.GetElementAsString(0) != null)
+                   {
+                       if(_IPAddress != data.GetElementAsString(0))
+                       {
+                           _IPAddress = data.GetElementAsString(0);
+                           _sender.Dispose();
+                           _sender = new OscClient(_IPAddress, _oscPortOut);
+                       }
+                   }
+               }
+           );
+    }
+    private static string LocalIPAddress()
+    {
+        IPHostEntry host;
+        string localIP = "0.0.0.0";
+        host = Dns.GetHostEntry(Dns.GetHostName());
+        foreach (IPAddress ip in host.AddressList)
+        {
+            if (ip.AddressFamily == AddressFamily.InterNetwork)
+            {
+                localIP = ip.ToString();
+                break;
+            }
+        }
+        return localIP;
     }
 }
