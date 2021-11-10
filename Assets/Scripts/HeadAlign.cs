@@ -7,6 +7,7 @@ using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 
+
 public class HeadAlign : MonoBehaviour
 {
     public string _IPAddress = "";
@@ -18,7 +19,6 @@ public class HeadAlign : MonoBehaviour
 
     public GameObject _mainCamera;
     public GameObject _speakerAnchor;
-    public GameObject _textDisplay;
 
     public GameObject _headPositionTarget;
     public GameObject _virtualSpeaker;
@@ -27,19 +27,19 @@ public class HeadAlign : MonoBehaviour
 
     private GameObject _arrow;
 
-    //private bool targetVis;
     private bool orientationLocked = false;
     private float speakerAz = 0.0f;
     private float speakerEl = 0.0f;
     private float speakerDist = 1.0f;
     private double _timeAtStartup;
 
-    //// testing
-    ////float[] test_azis = { 0.0f, 45.0f, 45.0f, 135.0f, 135.0f, 225.0f, 225.0f, 315.0f, 315.0f };
-    ////float[] test_eles = { 0.0f, -30.0f, 30.0f, -30.0f, 30.0f, -30.0f, 30.0f, -30.0f, 30.0f };
-    //float[] test_azis = { 0.00f,0.00f,0.00f,0.00f,18.43f,18.43f,45.00f,45.00f,45.00f,45.00f,45.00f,71.57f,71.57f,90.00f,90.00f,90.00f,108.43f,108.43f,135.00f,135.00f,135.00f,135.00f,135.00f,161.57f,161.57f,180.00f,180.00f,180.00f,180.00f,-161.57f,-161.57f,-135.00f,-135.00f,-135.00f,-135.00f,-135.00f,-108.43f,-108.43f,-90.00f,-90.00f,-90.00f,-71.57f,-71.57f,-45.00f,-45.00f,-45.00f,-45.00f,-45.00f,-18.43f,-18.43f};
-    //float[] test_eles = { -45.00f,0.00f,45.00f,90.00f,-17.55f,17.55f,-64.76f,-35.26f,0.00f,35.26f,64.76f,-17.55f,17.55f,-45.00f,0.00f,45.00f,-17.55f,17.55f,-64.76f,-35.26f,0.00f,35.26f,64.76f,-17.55f,17.55f,-90.00f,-45.00f,0.00f,45.00f,-17.55f,17.55f,-64.76f,-35.26f,0.00f,35.26f,64.76f,-17.55f,17.55f,-45.00f,0.00f,45.00f,-17.55f,17.55f,-64.76f,-35.26f,0.00f,35.26f,64.76f,-17.55f,17.55f};
-    //int testLocIndex = 0;
+#if GUIDING_DEBUG
+    //float[] test_azis = { 0.0f, 45.0f, 45.0f, 135.0f, 135.0f, 225.0f, 225.0f, 315.0f, 315.0f };
+    //float[] test_eles = { 0.0f, -30.0f, 30.0f, -30.0f, 30.0f, -30.0f, 30.0f, -30.0f, 30.0f };
+    float[] test_azis = { 0.00f, 0.00f, 0.00f, 0.00f, 18.43f, 18.43f, 45.00f, 45.00f, 45.00f, 45.00f, 45.00f, 71.57f, 71.57f, 90.00f, 90.00f, 90.00f, 108.43f, 108.43f, 135.00f, 135.00f, 135.00f, 135.00f, 135.00f, 161.57f, 161.57f, 180.00f, 180.00f, 180.00f, 180.00f, -161.57f, -161.57f, -135.00f, -135.00f, -135.00f, -135.00f, -135.00f, -108.43f, -108.43f, -90.00f, -90.00f, -90.00f, -71.57f, -71.57f, -45.00f, -45.00f, -45.00f, -45.00f, -45.00f, -18.43f, -18.43f };
+    float[] test_eles = { -45.00f, 0.00f, 45.00f, 90.00f, -17.55f, 17.55f, -64.76f, -35.26f, 0.00f, 35.26f, 64.76f, -17.55f, 17.55f, -45.00f, 0.00f, 45.00f, -17.55f, 17.55f, -64.76f, -35.26f, 0.00f, 35.26f, 64.76f, -17.55f, 17.55f, -90.00f, -45.00f, 0.00f, 45.00f, -17.55f, 17.55f, -64.76f, -35.26f, 0.00f, 35.26f, 64.76f, -17.55f, 17.55f, -45.00f, 0.00f, 45.00f, -17.55f, 17.55f, -64.76f, -35.26f, 0.00f, 35.26f, 64.76f, -17.55f, 17.55f };
+    int testLocIndex = 0;
+#endif
 
     void Start()
     {
@@ -86,10 +86,6 @@ public class HeadAlign : MonoBehaviour
         _arrow.GetComponent<LineRenderer>().generateLightingData = true;
         _arrow.GetComponent<LineRenderer>().useWorldSpace = false;
 
-        // for testing purpose only
-        //speakerAz = 45.0f;
-        //speakerEl = 30.0f;
-
         localIp = LocalIPAddress();
         setupOsc();
     }
@@ -99,14 +95,14 @@ public class HeadAlign : MonoBehaviour
     }
     void Update()
     {
-        //// testing
-        //if (OVRInput.GetDown(OVRInput.Button.PrimaryIndexTrigger, OVRInput.Controller.RTouch))
-        //{
-        //    testLocIndex = (testLocIndex + 1) % test_azis.Length;
-        //    speakerAz = test_azis[testLocIndex];
-        //    speakerEl = test_eles[testLocIndex];
-        //}
-
+#if GUIDING_DEBUG
+        if (OVRInput.GetDown(OVRInput.Button.PrimaryIndexTrigger, OVRInput.Controller.RTouch))
+        {
+            testLocIndex = (testLocIndex + 1) % test_azis.Length;
+            speakerAz = test_azis[testLocIndex];
+            speakerEl = test_eles[testLocIndex];
+        }
+#endif
 
         String text = "";
 
@@ -145,12 +141,16 @@ public class HeadAlign : MonoBehaviour
         float headSpAngDev = Vector3.Angle(vsVec, lsVec);
         text += "Angular distance: " + headSpAngDev.ToString("F2") + "\n";
 
+        // FLOOR CIRCLE ARROW AZIMUTH
+        _headPositionTarget.GetComponent<FloorCircle>().RotateArrow(-speakerAz);
+
         // ARROW
-        float az = (speakerAz + 360.0f) % 360.0f;
+        float az = speakerAz;
+        while (az < 0) az += 360.0f;
         _arrow.GetComponent<LineRenderer>().SetPosition(0, vfCenter);
         if(az < 90 || az >= 270)
         {
-            Vector3 arrowEndPosition = vfCenter + direction.normalized * Mathf.Sin(headSpAngDev * Mathf.PI / 360);
+            Vector3 arrowEndPosition = vfCenter + direction.normalized * Mathf.Sin(headSpAngDev * Mathf.PI / 360.0f);
             _arrow.GetComponent<LineRenderer>().SetPosition(1, arrowEndPosition);
             _headOrientationTarget.transform.position = arrowEndPosition;
         }
@@ -158,7 +158,7 @@ public class HeadAlign : MonoBehaviour
         {
             Vector3 dir2;
             dir2 = Vector3.Reflect(direction.normalized, _mainCamera.transform.up);
-            Vector3 arrowEndPosition = vfCenter + dir2 * Mathf.Sin(headSpAngDev * Mathf.PI / 360);
+            Vector3 arrowEndPosition = vfCenter + dir2 * Mathf.Sin(headSpAngDev * Mathf.PI / 360.0f);
             _arrow.GetComponent<LineRenderer>().SetPosition(1, arrowEndPosition);
             _headOrientationTarget.transform.position = arrowEndPosition;
         }
@@ -167,37 +167,21 @@ public class HeadAlign : MonoBehaviour
         _headOrientationCross.transform.position = _mainCamera.transform.position;
         _headOrientationCross.transform.rotation = _mainCamera.transform.rotation;
 
-        float pitchSign = 1.0f, rollSign = 1.0f;
-        float crRotYaw = -(az - azimuthAngle);
+        float pitchSign = 1.0f, rollSign = -1.0f;
+        while (azimuthAngle < 0.0f) azimuthAngle += 360.0f;
+        float crRotYaw = azimuthAngle - az;
 
-
-        if (az >= 0.0f && az < 90.0f)
-        {
-            pitchSign = 1.0f;
-            rollSign = -1.0f;
-        }
-        else if (az >= 90.0f && az < 180.0f)
-        {
-            pitchSign = -1.0f;
-            rollSign = -1.0f;
-        }
-        else if (az >= 180.0f && az < 270.0f)
-        {
-            pitchSign = 1.0f;
-            rollSign = 1.0f;
-        }
-        else if (az >= 270.0f && az < 360.0f)
-        {
-            pitchSign = -1.0f;
-            rollSign = 1.0f;
-        }
+        if (az < 90 || az >= 270) pitchSign = 1.0f;
+        else pitchSign = -1.0f;
 
         float crRotPitch = pitchSign * Mathf.Sin(azimuthAngle * Mathf.PI / 360.0f) * (speakerEl - elevationAngle);
         float crRotRoll = rollSign * Mathf.Cos(azimuthAngle * Mathf.PI / 360.0f) * (speakerEl - elevationAngle);
-        _headOrientationCross.transform.Rotate(crRotPitch, crRotYaw, crRotRoll);
 
-        // FLOOR CIRCLE ARROW AZIMUTH
-        _headPositionTarget.GetComponent<FloorCircle>().arrowAzimuth = -speakerAz;
+        crRotYaw = wrapAngle(crRotYaw);
+        crRotPitch = wrapAngle(crRotPitch);
+        crRotRoll = wrapAngle(crRotRoll);
+
+        _headOrientationCross.transform.Rotate(crRotPitch, crRotYaw, crRotRoll);
 
         // LOCKED ORIENTATION INDICATOR
         if (orientationLocked)
@@ -243,7 +227,31 @@ public class HeadAlign : MonoBehaviour
         text += "IP: " + localIp + "\n";
 
         // update text display
-        _textDisplay.GetComponent<TextMesh>().text = text;
+        TextDisplay.Instance.PrintMessage(text);
+
+        // hide some guides and block measurement
+        if (headTargetDistance > 0.4f)
+        {
+            _arrow.GetComponent<LineRenderer>().enabled = false;
+            _headOrientationTarget.GetComponent<Renderer>().enabled = false;
+            ShowHeadOrientationCross(false);
+
+            _headPositionTarget.GetComponent<FloorCircle>().DrawQuadraticBezierCurve(
+                                _mainCamera.transform.position - _mainCamera.transform.up * 0.6f,
+                                _mainCamera.transform.position + _mainCamera.transform.forward * 1.2f - _mainCamera.transform.up * 1.2f,
+                                _headPositionTarget.transform.position - _headPositionTarget.transform.up * 1.6f
+                                );
+
+            // block measurement
+        }
+        else
+        {
+            _arrow.GetComponent<LineRenderer>().enabled = true;
+            _headOrientationTarget.GetComponent<Renderer>().enabled = true;
+            if (az == 0.0f || az == 180.0f) ShowHeadOrientationCross(false);
+            else ShowHeadOrientationCross(true);
+            _headPositionTarget.GetComponent<FloorCircle>().HideCurve();
+        }
 
         // OSC output
         double currentTime = Time.realtimeSinceStartup - _timeAtStartup;
@@ -262,15 +270,6 @@ public class HeadAlign : MonoBehaviour
     {
         _sender = new OscClient(_IPAddress, _oscPortOut);
         _server = new OscServer(_oscPortIn);
-
-        //_server.MessageDispatcher.AddCallback(
-        //       "/targetVis",
-        //       (string address, OscDataHandle data) =>
-        //       {
-        //           if (data.GetElementAsInt(0) == 1) targetVis = true;
-        //           else targetVis = false;
-        //       }
-        //   );
 
         _server.MessageDispatcher.AddCallback(
                "/orientationLocked",
@@ -306,6 +305,21 @@ public class HeadAlign : MonoBehaviour
                    }
                }
            );
+    }
+
+    void ShowHeadOrientationCross(bool show)
+    {
+        int childCount = _headOrientationCross.transform.childCount;
+        for (int i = 0; i < childCount; ++i)
+        {
+            _headOrientationCross.transform.GetChild(i).GetComponent<Renderer>().enabled = show;
+        }
+    }
+    private float wrapAngle(float angle)
+    {
+        while (angle <= -180.0f) angle += 360.0f;
+        while (angle > 180.0f) angle -= 360.0f;
+        return angle;
     }
     private static string LocalIPAddress()
     {
