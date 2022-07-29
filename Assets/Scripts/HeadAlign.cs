@@ -10,7 +10,7 @@ using System.Net.Sockets;
 
 public class HeadAlign : MonoBehaviour
 {
-    public string _IPAddress = "";
+    public string _IPAddress = "127.0.0.1";
     public int _oscPortOut = 9000;
     public int _oscPortIn = 6000;
     private string localIp;
@@ -18,6 +18,7 @@ public class HeadAlign : MonoBehaviour
     private OscClient _sender;
 
     public GameObject _mainCamera;
+    private GameObject _listenerAnchor;
     public GameObject _speakerAnchor;
 
     public GameObject _headPositionTarget;
@@ -45,6 +46,8 @@ public class HeadAlign : MonoBehaviour
     {
         _timeAtStartup = Time.realtimeSinceStartup;
 
+        _listenerAnchor = new GameObject { name = "Listener Anchor" };
+
         // DRAW THE VIEWFINDER
         GameObject vfHorUp, vfHorDown, vrVertLeft, vfVertRight;
         float radius = 0.6f;
@@ -54,26 +57,26 @@ public class HeadAlign : MonoBehaviour
         vfHorDown = new GameObject { name = "vfHorDown" };
         vfHorDown.DrawCircle(radius, lineWidth);
         vfHorDown.GetComponent<LineRenderer>().material.color = Color.red;
-        vfHorDown.transform.parent = _mainCamera.transform;
+        vfHorDown.transform.parent = _listenerAnchor.transform;
         vfHorDown.transform.Translate(0.0f, -vfMargin, 0.0f);
 
         vfHorUp = new GameObject { name = "vfHorUp" };
         vfHorUp.DrawCircle(radius, lineWidth);
         vfHorUp.GetComponent<LineRenderer>().material.color = Color.red;
-        vfHorUp.transform.parent = _mainCamera.transform;
+        vfHorUp.transform.parent = _listenerAnchor.transform;
         vfHorUp.transform.Translate(0.0f, vfMargin, 0.0f);
 
         vrVertLeft = new GameObject { name = "vrVertLeft" };
         vrVertLeft.DrawCircle(radius, lineWidth);
         vrVertLeft.GetComponent<LineRenderer>().material.color = Color.green;
-        vrVertLeft.transform.parent = _mainCamera.transform;
+        vrVertLeft.transform.parent = _listenerAnchor.transform;
         vrVertLeft.transform.Translate(-vfMargin, 0.0f, 0.0f);
         vrVertLeft.transform.Rotate(transform.forward, 90.0f);
 
         vfVertRight = new GameObject { name = "vfVertRight" };
         vfVertRight.DrawCircle(radius, lineWidth);
         vfVertRight.GetComponent<LineRenderer>().material.color = Color.green;
-        vfVertRight.transform.parent = _mainCamera.transform;
+        vfVertRight.transform.parent = _listenerAnchor.transform;
         vfVertRight.transform.Translate(vfMargin, 0.0f, 0.0f);
         vfVertRight.transform.Rotate(transform.forward, 90.0f);
 
@@ -104,37 +107,41 @@ public class HeadAlign : MonoBehaviour
         }
 #endif
 
+        _listenerAnchor.transform.position = _mainCamera.transform.position;
+        _listenerAnchor.transform.rotation = _mainCamera.transform.rotation;
+        _listenerAnchor.transform.position = _listenerAnchor.transform.position - _listenerAnchor.transform.forward * 0.1f;
+
         String text = "";
 
         // display the desired speaker azimuth, elevation and distance
         text += "desired speaker azi: " + speakerAz.ToString("F1") + ", ele: " + speakerEl.ToString("F1") + ", dist: " + speakerDist.ToString("F2") + "\n";
 
         // obtain current azimuth and elevation angles and distance
-        Vector3 hsVec = Vector3.Normalize(_speakerAnchor.transform.position - _mainCamera.transform.position);
-        Vector3 projectedVec = Vector3.ProjectOnPlane(hsVec, _mainCamera.transform.up);
-        float azimuthAngle = Vector3.SignedAngle(_mainCamera.transform.forward, projectedVec, _mainCamera.transform.up);
-        float elevationAngle = Vector3.SignedAngle(_mainCamera.transform.up, hsVec, Vector3.Cross(_mainCamera.transform.up, hsVec));
+        Vector3 hsVec = Vector3.Normalize(_speakerAnchor.transform.position - _listenerAnchor.transform.position);
+        Vector3 projectedVec = Vector3.ProjectOnPlane(hsVec, _listenerAnchor.transform.up);
+        float azimuthAngle = Vector3.SignedAngle(_listenerAnchor.transform.forward, projectedVec, _listenerAnchor.transform.up);
+        float elevationAngle = Vector3.SignedAngle(_listenerAnchor.transform.up, hsVec, Vector3.Cross(_listenerAnchor.transform.up, hsVec));
         elevationAngle = (elevationAngle - 90.0f) * -1.0f;
-        float currDist = Vector3.Distance(_mainCamera.transform.position, _speakerAnchor.transform.position);
+        float currDist = Vector3.Distance(_listenerAnchor.transform.position, _speakerAnchor.transform.position);
         text += "current speaker azi: " + azimuthAngle.ToString("F1") + ", ele: " + elevationAngle.ToString("F1") + ", dist: " + currDist.ToString("F2") + "\n";
 
         // VIRTUAL SPEAKER
-        _virtualSpeaker.transform.position = _mainCamera.transform.position;
-        _virtualSpeaker.transform.rotation = _mainCamera.transform.rotation;
+        _virtualSpeaker.transform.position = _listenerAnchor.transform.position;
+        _virtualSpeaker.transform.rotation = _listenerAnchor.transform.rotation;
         _virtualSpeaker.transform.Rotate(-speakerEl, speakerAz, 0.0f);
-        _virtualSpeaker.transform.position = _mainCamera.transform.position + _virtualSpeaker.transform.forward * currDist;
+        _virtualSpeaker.transform.position = _listenerAnchor.transform.position + _virtualSpeaker.transform.forward * currDist;
 
         // HEAD ORIENTATION TARGET
         float orTargetDist = 0.6f;
-        _headOrientationTarget.transform.position = _mainCamera.transform.position;
-        _headOrientationTarget.transform.rotation = _mainCamera.transform.rotation;
+        _headOrientationTarget.transform.position = _listenerAnchor.transform.position;
+        _headOrientationTarget.transform.rotation = _listenerAnchor.transform.rotation;
         _headOrientationTarget.transform.Rotate(-(speakerEl - elevationAngle), speakerAz - azimuthAngle, 0.0f);
-        _headOrientationTarget.transform.position = _mainCamera.transform.position + _headOrientationTarget.transform.forward * orTargetDist;
+        _headOrientationTarget.transform.position = _listenerAnchor.transform.position + _headOrientationTarget.transform.forward * orTargetDist;
 
-        Vector3 mcCenter = _mainCamera.transform.position; // reference camera/head position
-        Vector3 vfCenter = _mainCamera.transform.position + _mainCamera.transform.forward * orTargetDist; // a point in front of the camera
-        Vector3 vsVec = _virtualSpeaker.transform.position - _mainCamera.transform.position;
-        Vector3 lsVec = _speakerAnchor.transform.position - _mainCamera.transform.position;
+        Vector3 mcCenter = _listenerAnchor.transform.position; // reference camera/head position
+        Vector3 vfCenter = _listenerAnchor.transform.position + _listenerAnchor.transform.forward * orTargetDist; // a point in front of the camera
+        Vector3 vsVec = _virtualSpeaker.transform.position - _listenerAnchor.transform.position;
+        Vector3 lsVec = _speakerAnchor.transform.position - _listenerAnchor.transform.position;
         Vector3 crossVec = Vector3.Cross(vfCenter - mcCenter, _headOrientationTarget.transform.position - mcCenter);
         Vector3 direction = Vector3.Cross(vfCenter - mcCenter, crossVec);
 
@@ -157,15 +164,15 @@ public class HeadAlign : MonoBehaviour
         else
         {
             Vector3 dir2;
-            dir2 = Vector3.Reflect(direction.normalized, _mainCamera.transform.up);
+            dir2 = Vector3.Reflect(direction.normalized, _listenerAnchor.transform.up);
             Vector3 arrowEndPosition = vfCenter + dir2 * Mathf.Sin(headSpAngDev * Mathf.PI / 360.0f);
             _arrow.GetComponent<LineRenderer>().SetPosition(1, arrowEndPosition);
             _headOrientationTarget.transform.position = arrowEndPosition;
         }
 
         // HEAD ORIENTATION CROSS
-        _headOrientationCross.transform.position = _mainCamera.transform.position;
-        _headOrientationCross.transform.rotation = _mainCamera.transform.rotation;
+        _headOrientationCross.transform.position = _listenerAnchor.transform.position;
+        _headOrientationCross.transform.rotation = _listenerAnchor.transform.rotation;
 
         float pitchSign = 1.0f, rollSign = -1.0f;
         while (azimuthAngle < 0.0f) azimuthAngle += 360.0f;
@@ -200,27 +207,27 @@ public class HeadAlign : MonoBehaviour
         _headPositionTarget.transform.rotation = _speakerAnchor.transform.rotation;
         _headPositionTarget.transform.Translate(0.0f, 0.0f, -speakerDist);
 
-        float headTargetDistance = Vector3.Distance(_mainCamera.transform.position, _headPositionTarget.transform.position);
+        float headTargetDistance = Vector3.Distance(_listenerAnchor.transform.position, _headPositionTarget.transform.position);
         text += "Distance from the position target: " + headTargetDistance.ToString("F2") + "\n";
 
         // obtain distance from the target (front back)
-        float backfrontDistance = Vector3.Dot(_speakerAnchor.transform.TransformDirection(Vector3.forward), _mainCamera.transform.position - _headPositionTarget.transform.position);
+        float backfrontDistance = Vector3.Dot(_speakerAnchor.transform.TransformDirection(Vector3.forward), _listenerAnchor.transform.position - _headPositionTarget.transform.position);
         text += "back / front: " + backfrontDistance.ToString("F2") + "\n";
 
         // obtain distance from the target (left right)
-        float leftrightDistance = Vector3.Dot(_speakerAnchor.transform.TransformDirection(Vector3.right), _mainCamera.transform.position - _headPositionTarget.transform.position);
+        float leftrightDistance = Vector3.Dot(_speakerAnchor.transform.TransformDirection(Vector3.right), _listenerAnchor.transform.position - _headPositionTarget.transform.position);
         text += "left / right: " + leftrightDistance.ToString("F2") + "\n";
 
         // obtain distance from the target (down up)
-        float downupDistance = Vector3.Dot(_speakerAnchor.transform.TransformDirection(Vector3.up), _mainCamera.transform.position - _headPositionTarget.transform.position);
+        float downupDistance = Vector3.Dot(_speakerAnchor.transform.TransformDirection(Vector3.up), _listenerAnchor.transform.position - _headPositionTarget.transform.position);
         text += "down / up: " + downupDistance.ToString("F2") + "\n";
 
         // angle between speaker axis and speaker-head vector
-        float spHeadAngDev = Vector3.Angle(_headPositionTarget.transform.position - _speakerAnchor.transform.position, _mainCamera.transform.position - _speakerAnchor.transform.position);
+        float spHeadAngDev = Vector3.Angle(_headPositionTarget.transform.position - _speakerAnchor.transform.position, _listenerAnchor.transform.position - _speakerAnchor.transform.position);
         text += "Angular deviation: " + spHeadAngDev.ToString("F2") + " deg\n";
 
         // head height
-        float headHeight = _mainCamera.transform.position.y;
+        float headHeight = _listenerAnchor.transform.position.y;
         text += "head height: " + headHeight.ToString("F2") + " m\n";
 
         // Quest IP
@@ -237,8 +244,8 @@ public class HeadAlign : MonoBehaviour
             ShowHeadOrientationCross(false);
 
             _headPositionTarget.GetComponent<FloorCircle>().DrawQuadraticBezierCurve(
-                                _mainCamera.transform.position - _mainCamera.transform.up * 0.6f,
-                                _mainCamera.transform.position + _mainCamera.transform.forward * 1.2f - _mainCamera.transform.up * 1.2f,
+                                _listenerAnchor.transform.position - _listenerAnchor.transform.up * 0.6f,
+                                _listenerAnchor.transform.position + _listenerAnchor.transform.forward * 1.2f - _listenerAnchor.transform.up * 1.2f,
                                 _headPositionTarget.transform.position - _headPositionTarget.transform.up * 1.6f
                                 );
 
