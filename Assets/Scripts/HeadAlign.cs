@@ -28,10 +28,11 @@ public class HeadAlign : MonoBehaviour
 
     private GameObject _arrow;
 
+    private bool guidesVisible = false;
     private bool orientationLocked = false;
     private float speakerAz = 0.0f;
     private float speakerEl = 0.0f;
-    private float speakerDist = 1.0f;
+    private float speakerDist = 1.5f;
     private double _timeAtStartup;
 
 #if GUIDING_DEBUG
@@ -237,27 +238,34 @@ public class HeadAlign : MonoBehaviour
         TextDisplay.Instance.PrintMessage(text);
 
         // hide some guides and block measurement
+        bool standingInsideTheCircle = false;
         if (headTargetDistance > 0.4f)
         {
-            _arrow.GetComponent<LineRenderer>().enabled = false;
-            _headOrientationTarget.GetComponent<Renderer>().enabled = false;
-            ShowHeadOrientationCross(false);
-
+            standingInsideTheCircle = false;
             _headPositionTarget.GetComponent<FloorCircle>().DrawQuadraticBezierCurve(
                                 _listenerAnchor.transform.position - _listenerAnchor.transform.up * 0.6f,
                                 _listenerAnchor.transform.position + _listenerAnchor.transform.forward * 1.2f - _listenerAnchor.transform.up * 1.2f,
                                 _headPositionTarget.transform.position - _headPositionTarget.transform.up * 1.6f
                                 );
-
-            // block measurement
         }
         else
+        {
+            standingInsideTheCircle = true;
+            _headPositionTarget.GetComponent<FloorCircle>().HideCurve();
+        }
+        
+        if (guidesVisible && standingInsideTheCircle)
         {
             _arrow.GetComponent<LineRenderer>().enabled = true;
             _headOrientationTarget.GetComponent<Renderer>().enabled = true;
             if (az == 0.0f || az == 180.0f) ShowHeadOrientationCross(false);
             else ShowHeadOrientationCross(true);
-            _headPositionTarget.GetComponent<FloorCircle>().HideCurve();
+        }
+        else
+        {
+            _arrow.GetComponent<LineRenderer>().enabled = false;
+            _headOrientationTarget.GetComponent<Renderer>().enabled = false;
+            ShowHeadOrientationCross(false);
         }
 
         // OSC output
@@ -277,6 +285,15 @@ public class HeadAlign : MonoBehaviour
     {
         _sender = new OscClient(_IPAddress, _oscPortOut);
         _server = new OscServer(_oscPortIn);
+
+        _server.MessageDispatcher.AddCallback(
+               "/targetVis",
+               (string address, OscDataHandle data) =>
+               {
+                   if (data.GetElementAsInt(0) == 1) guidesVisible = true;
+                   else guidesVisible = false;
+               }
+           );
 
         _server.MessageDispatcher.AddCallback(
                "/orientationLocked",
